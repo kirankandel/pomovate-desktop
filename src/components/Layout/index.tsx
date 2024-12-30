@@ -1,19 +1,9 @@
 import React, { PropsWithChildren } from "react";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
 
 const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <Sidebar />
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <Header />
-        {/* Main Content */}
-        {children}
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-gray-800">
+      <div className="w-full max-w-4xl px-4">{children}</div>
     </div>
   );
 };

@@ -1,15 +1,19 @@
+import React from "react";
 import Layout from "@/components/Layout";
-import "./App.css";
+import Timer from "@/components/Timer";
+import TaskList from "@/components/Tasks/TaskList";
 
-function App() {
+const App: React.FC = () => {
   return (
     <Layout>
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <h1 className="text-4xl font-bold">Pomodoro Timer</h1>
+      <div className="mb-12">
+        <Timer />
+      </div>
+      <div>
+        <TaskList />
       </div>
     </Layout>
   );
-}
+};
 
 export default App;
