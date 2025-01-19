@@ -1,15 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getSettings, updateSettings as updateDbSettings, initDatabase } from '@/database/db';
+import { getDatabase } from '@/database/db';
 
 export interface Settings {
-  pomodoroTime: number;
-  shortBreakTime: number;
-  longBreakTime: number;
-  longBreakInterval: number;
-  autoStartBreaks: boolean;
-  autoStartPomodoros: boolean;
-  soundEnabled: boolean;
-}
+    pomodoroTime: number;
+    shortBreakTime: number;
+    longBreakTime: number;
+    longBreakInterval: number;
+    autoStartBreaks: boolean;
+    autoStartPomodoros: boolean;
+    soundEnabled: boolean;
+  }
+  
+const defaultSettings: Settings = {
+  pomodoroTime: 25,
+  shortBreakTime: 5,
+  longBreakTime: 15,
+  longBreakInterval: 4,
+  autoStartBreaks: true,
+  autoStartPomodoros: true,
+  soundEnabled: true
+};
 
 const validateSettings = (settings: Partial<Settings>): Partial<Settings> => {
   const validated: Partial<Settings> = {};
@@ -39,16 +49,6 @@ const validateSettings = (settings: Partial<Settings>): Partial<Settings> => {
   return validated;
 };
 
-const defaultSettings: Settings = {
-  pomodoroTime: 25,
-  shortBreakTime: 5,
-  longBreakTime: 15,
-  longBreakInterval: 4,
-  autoStartBreaks: true,
-  autoStartPomodoros: true,
-  soundEnabled: true
-};
-
 interface SettingsContextType {
   settings: Settings;
   updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
@@ -60,34 +60,37 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [db, setDb] = useState<Awaited<ReturnType<typeof getDatabase>> | null>(null);
 
-  // Initialize database and load settings
   useEffect(() => {
     const init = async () => {
       try {
-        await initDatabase();
-        const savedSettings = await getSettings();
+        const database = await getDatabase();
+        setDb(database);
+        
+        const savedSettings = await database.settings.get();
         if (Object.keys(savedSettings).length) {
           const validated = validateSettings(savedSettings);
           setSettings(curr => ({ ...curr, ...validated }));
         } else {
-          // If no settings in DB, save defaults
-          await updateDbSettings(defaultSettings);
+          await database.settings.update(defaultSettings);
         }
-        setIsInitialized(true);
       } catch (error) {
         console.error('Failed to initialize settings:', error);
+      } finally {
+        setIsInitialized(true);
       }
     };
     init();
   }, []);
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
+    if (!db) return;
     try {
       const validatedSettings = validateSettings(newSettings);
       const updatedSettings = { ...settings, ...validatedSettings };
       setSettings(updatedSettings);
-      await updateDbSettings(updatedSettings);
+      await db.settings.update(updatedSettings);
     } catch (error) {
       console.error('Failed to update settings:', error);
       throw error;
@@ -95,9 +98,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const resetSettings = async () => {
+    if (!db) return;
     try {
       setSettings(defaultSettings);
-      await updateDbSettings(defaultSettings);
+      await db.settings.update(defaultSettings);
     } catch (error) {
       console.error('Failed to reset settings:', error);
       throw error;
@@ -105,7 +109,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   if (!isInitialized) {
-    return null; // or loading indicator
+    return null;
   }
 
   return (

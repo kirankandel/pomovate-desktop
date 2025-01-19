@@ -2,13 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import Task from '@/types/task';
 import CompletedTask from '@/types/completedTask';
 import { 
-  initDatabase, 
-  getTasks, 
-  getCompletedTasks, 
-  getProjects,
-  addTask as dbAddTask,
-  completeTask as dbCompleteTask,
-  addProject as dbAddProject
+  getDatabase,
+  tasks as dbTasks,
+  projects as dbProjects,
+  completedTasks as dbCompletedTasks
 } from '@/database/db';
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak';
@@ -44,15 +41,14 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentPomodoro, setCurrentPomodoro] = useState({ elapsed: 0, total: 0 });
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize database and load data
   useEffect(() => {
     const init = async () => {
       try {
-        await initDatabase();
+        await getDatabase();
         const [loadedTasks, loadedCompletedTasks, loadedProjects] = await Promise.all([
-          getTasks(),
-          getCompletedTasks(),
-          getProjects()
+          dbTasks.getAll(),
+          dbCompletedTasks.getAll(),
+          dbProjects.getAll()
         ]);
         setTasks(loadedTasks);
         setCompletedTasks(loadedCompletedTasks);
@@ -60,6 +56,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to initialize tasks:', error);
+        setIsInitialized(true);
       }
     };
     init();
@@ -67,8 +64,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addTask = async (taskData: Omit<Task, 'id' | 'completedPomodoros'>) => {
     try {
-      await dbAddTask(taskData);
-      const updatedTasks = await getTasks();
+      await dbTasks.add(taskData);
+      const updatedTasks = await dbTasks.getAll();
       setTasks(updatedTasks);
     } catch (error) {
       console.error('Failed to add task:', error);
@@ -81,8 +78,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (activeTask?.id === id) {
         setActiveTask(null);
       }
-      await dbDeleteTask(id);
-      const updatedTasks = await getTasks();
+      await dbTasks.delete(id);
+      const updatedTasks = await dbTasks.getAll();
       setTasks(updatedTasks);
     } catch (error) {
       console.error('Failed to delete task:', error);
@@ -95,10 +92,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (activeTask?.id === id) {
         setActiveTask(null);
       }
-      await dbCompleteTask(id);
+      await dbTasks.complete(id);
       const [updatedTasks, updatedCompletedTasks] = await Promise.all([
-        getTasks(),
-        getCompletedTasks()
+        dbTasks.getAll(),
+        dbCompletedTasks.getAll()
       ]);
       setTasks(updatedTasks);
       setCompletedTasks(updatedCompletedTasks);
@@ -116,8 +113,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...task,
           completedPomodoros: task.completedPomodoros + 1
         };
-        await dbUpdateTask(updatedTask);
-        const updatedTasks = await getTasks();
+        await dbTasks.update(updatedTask);
+        const updatedTasks = await dbTasks.getAll();
         setTasks(updatedTasks);
       }
     } catch (error) {
@@ -128,8 +125,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addProject = async (project: string) => {
     try {
-      await dbAddProject(project);
-      const updatedProjects = await getProjects();
+      await dbProjects.add(project);
+      const updatedProjects = await dbProjects.getAll();
       setProjects(updatedProjects);
     } catch (error) {
       console.error('Failed to add project:', error);
@@ -138,7 +135,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   if (!isInitialized) {
-    return null; // or loading indicator
+    return null;
   }
 
   return (

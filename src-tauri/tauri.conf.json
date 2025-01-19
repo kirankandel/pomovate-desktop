@@ -21,6 +21,13 @@
       "csp": null
     }
   },
+    "tauri": {
+    "allowlist": {
+      "fs": {
+        "all": true,
+        "scope": ["$APPDATA/*", "$APPDATA/database.db"]
+      }
+    },
   "bundle": {
     "active": true,
     "targets": "all",
