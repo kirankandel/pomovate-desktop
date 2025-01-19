@@ -6,12 +6,14 @@ type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak';
 interface TaskContextType {
   tasks: Task[];
   activeTask: Task | null;
+  projects: string[];
   mode: TimerMode;
   currentPomodoro: {
     elapsed: number;
     total: number;
   };
   setMode: (mode: TimerMode) => void;
+  addProject: (project: string) => void;
   setActiveTask: (task: Task | null) => void;
   addTask: (task: Omit<Task, 'id' | 'completedPomodoros'>) => void;
   updateTaskProgress: (taskId: string) => void;
@@ -25,7 +27,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [mode, setMode] = useState<TimerMode>('pomodoro');
   const [currentPomodoro, setCurrentPomodoro] = useState({ elapsed: 0, total: 25 * 60 });
-
+  const [projects, setProjects] = useState<string[]>(() => {
+    const saved = localStorage.getItem('projects');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const addProject = (project: string) => {
+    if (!projects.includes(project)) {
+      const newProjects = [...projects, project];
+      setProjects(newProjects);
+      localStorage.setItem('projects', JSON.stringify(newProjects));
+    }
+  };
   const addTask = (taskData: Omit<Task, 'id' | 'completedPomodoros'>) => {
     const newTask = {
       ...taskData,
@@ -47,6 +59,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <TaskContext.Provider value={{
       tasks,
       activeTask,
+      projects,
+      addProject,
       mode,
       currentPomodoro,
       setMode,

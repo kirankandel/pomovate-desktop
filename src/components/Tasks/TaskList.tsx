@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useTaskContext } from "@/context/TaskContext";
+import Task from "@/types/task";
+import ProjectSelect from "@/components/ProjectSelect";
 
 const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
   const { activeTask, currentPomodoro, setActiveTask } = useTaskContext();
@@ -100,11 +102,13 @@ const AddTaskForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             value={estimatedPomodoros}
             onChange={(e) => setEstimatedPomodoros(Number(e.target.value))}
             className="w-full p-2 rounded-lg border border-slate-200"
+            title="Estimated Pomodoros"
           />
         </div>
         <div>
-          <label className="block text-sm text-slate-600 mb-1">Priority</label>
+          <label htmlFor="priority-select" className="block text-sm text-slate-600 mb-1">Priority</label>
           <select
+            id="priority-select"
             value={priority}
             onChange={(e) => setPriority(e.target.value as 'high' | 'medium' | 'low')}
             className="w-full p-2 rounded-lg border border-slate-200"
@@ -115,12 +119,9 @@ const AddTaskForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </select>
         </div>
       </div>
-      <input
-        type="text"
-        placeholder="Project (optional)"
+      <ProjectSelect
         value={project}
-        onChange={(e) => setProject(e.target.value)}
-        className="w-full p-3 rounded-lg border border-slate-200"
+        onChange={setProject}
       />
       <div className="flex justify-end space-x-3">
         <button
