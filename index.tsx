@@ -9,7 +9,7 @@ const Timer: React.FC = () => {
   const RED_THRESHOLD = TOTAL_TIME * 0.25;
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
+    let timer: NodeJS.Timeout;
     if (isRunning && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else {
@@ -35,22 +35,15 @@ const Timer: React.FC = () => {
   };
 
   return (
-<div className="bg-white shadow-lg rounded-lg p-6 text-center w-96">
+    <div className="bg-white shadow-lg rounded-lg p-6 text-center w-96">
       <div 
-        className="relative w-64 h-64 mx-auto mb-4 rounded-full"
+        className={`relative w-64 h-64 mx-auto mb-4 rounded-full border-8 ${getColor()}`}
         style={{
-          background: `conic-gradient(
-            ${timeLeft <= RED_THRESHOLD ? '#ef4444' : 
-              timeLeft <= YELLOW_THRESHOLD ? '#eab308' : '#22c55e'} ${getProgress()}deg,
-            #f3f4f6 ${getProgress()}deg
-          )`,
-          boxShadow: '0 0 10px rgba(0,0,0,0.1)'
+          background: `conic-gradient(transparent ${getProgress()}deg, #f3f4f6 0deg)`
         }}
       >
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bg-white rounded-full w-[calc(100%-16px)] h-[calc(100%-16px)] flex items-center justify-center">
-            <h3 className="text-4xl font-bold text-gray-800">{formatTime(timeLeft)}</h3>
-          </div>
+          <h3 className="text-4xl font-bold text-gray-800">{formatTime(timeLeft)}</h3>
         </div>
       </div>
       <button
