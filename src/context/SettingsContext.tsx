@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getSettings, updateSettings as updateDbSettings, initDatabase } from '@/database/db';
 
 export interface Settings {
   pomodoroTime: number;
@@ -38,8 +39,6 @@ const validateSettings = (settings: Partial<Settings>): Partial<Settings> => {
   return validated;
 };
 
-const STORAGE_KEY = 'pomodoroSettings';
-
 const defaultSettings: Settings = {
   pomodoroTime: 25,
   shortBreakTime: 5,
@@ -52,52 +51,62 @@ const defaultSettings: Settings = {
 
 interface SettingsContextType {
   settings: Settings;
-  updateSettings: (newSettings: Partial<Settings>) => void;
-  resetSettings: () => void;
+  updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+  resetSettings: () => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<Settings>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const validated = validateSettings(parsed);
-        return { ...defaultSettings, ...validated };
-      }
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    }
-    return defaultSettings;
-  });
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initialize database and load settings
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-    }
-  }, [settings]);
+    const init = async () => {
+      try {
+        await initDatabase();
+        const savedSettings = await getSettings();
+        if (Object.keys(savedSettings).length) {
+          const validated = validateSettings(savedSettings);
+          setSettings(curr => ({ ...curr, ...validated }));
+        } else {
+          // If no settings in DB, save defaults
+          await updateDbSettings(defaultSettings);
+        }
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Failed to initialize settings:', error);
+      }
+    };
+    init();
+  }, []);
 
-  const updateSettings = (newSettings: Partial<Settings>) => {
+  const updateSettings = async (newSettings: Partial<Settings>) => {
     try {
       const validatedSettings = validateSettings(newSettings);
-      setSettings(prev => ({ ...prev, ...validatedSettings }));
+      const updatedSettings = { ...settings, ...validatedSettings };
+      setSettings(updatedSettings);
+      await updateDbSettings(updatedSettings);
     } catch (error) {
       console.error('Failed to update settings:', error);
+      throw error;
     }
   };
 
-  const resetSettings = () => {
+  const resetSettings = async () => {
     try {
       setSettings(defaultSettings);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultSettings));
+      await updateDbSettings(defaultSettings);
     } catch (error) {
       console.error('Failed to reset settings:', error);
+      throw error;
     }
   };
+
+  if (!isInitialized) {
+    return null; // or loading indicator
+  }
 
   return (
     <SettingsContext.Provider value={{
