@@ -1,66 +1,96 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useTaskContext } from "@/context/TaskContext";
+
+const TIMER_DURATION = {
+  pomodoro: 2 * 60,
+  shortBreak: 5 * 60,
+  longBreak: 15 * 60
+};
 
 const Timer: React.FC = () => {
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
-  const [isRunning, setIsRunning] = useState(false);
+  const { activeTask, mode, setCurrentPomodoro, updateTaskProgress } = useTaskContext();
+  const [isRunning, setIsRunning] = React.useState(false);
+  const [timeLeft, setTimeLeft] = React.useState(TIMER_DURATION[mode]);
 
-  const TOTAL_TIME = 25 * 60;
-  const YELLOW_THRESHOLD = TOTAL_TIME * 0.5;
-  const RED_THRESHOLD = TOTAL_TIME * 0.25;
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (isRunning && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else {
-      clearInterval(timer);
+      timer = setInterval(() => {
+        setTimeLeft((prevTime) => prevTime - 1);
+        setCurrentPomodoro({
+          elapsed: TIMER_DURATION[mode] - (timeLeft - 1),
+          total: TIMER_DURATION[mode]
+        });
+      }, 1000);
+    } else if (timeLeft === 0 && activeTask) {
+      updateTaskProgress(activeTask.id);
     }
     return () => clearInterval(timer);
   }, [isRunning, timeLeft]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const getColor = () => {
-    if (timeLeft <= RED_THRESHOLD) return "border-red-500";
-    if (timeLeft <= YELLOW_THRESHOLD) return "border-yellow-500";
-    return "border-green-500";
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
   const getProgress = () => {
-    return (timeLeft / TOTAL_TIME) * 360;
+    const total = TIMER_DURATION[mode];
+    return ((total - timeLeft) / total) * 360;
+  };
+
+  const getColor = () => {
+    const progress = getProgress();
+    if (progress > 270) return '#ef4444'; // red
+    if (progress > 180) return '#eab308'; // yellow
+    return '#22c55e'; // green
   };
 
   return (
-<div className="bg-white shadow-lg rounded-lg p-6 text-center w-96">
-      <div 
-        className="relative w-64 h-64 mx-auto mb-4 rounded-full"
-        style={{
-          background: `conic-gradient(
-            ${timeLeft <= RED_THRESHOLD ? '#ef4444' : 
-              timeLeft <= YELLOW_THRESHOLD ? '#eab308' : '#22c55e'} ${getProgress()}deg,
-            #f3f4f6 ${getProgress()}deg
-          )`,
-          boxShadow: '0 0 10px rgba(0,0,0,0.1)'
-        }}
-      >
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bg-white rounded-full w-[calc(100%-16px)] h-[calc(100%-16px)] flex items-center justify-center">
-            <h3 className="text-4xl font-bold text-gray-800">{formatTime(timeLeft)}</h3>
+    <div className="relative">
+      <div className="backdrop-blur-lg bg-white/30 rounded-xl p-8 shadow-xl">
+        <div className="relative w-64 h-64 mx-auto">
+          {/* Progress Circle */}
+          <div 
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: `conic-gradient(
+                ${getColor()} ${getProgress()}deg,
+                #f3f4f6 ${getProgress()}deg
+              )`,
+              transition: 'all 1s linear'
+            }}
+          >
+            <div className="absolute inset-2 bg-white rounded-full">
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <h3 className={`text-4xl font-bold ${
+                  isRunning ? 'animate-pulse' : ''
+                }`}>
+                  {formatTime(timeLeft)}
+                </h3>
+                {activeTask && (
+                  <p className="text-sm text-slate-600 mt-2 max-w-[80%] truncate">
+                    {activeTask.description}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+        
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => setIsRunning(!isRunning)}
+            className={`px-6 py-3 rounded-full transition-all
+              ${isRunning ? 
+                'bg-red-500 hover:bg-red-600' : 
+                'bg-gradient-to-r from-violet-500 to-purple-500 hover:shadow-lg'
+              } text-white font-medium shadow-lg hover:scale-105 active:scale-95`}
+          >
+            {isRunning ? "Pause" : "Start"}
+          </button>
+        </div>
       </div>
-      <button
-        onClick={() => setIsRunning(!isRunning)}
-        className={`px-6 py-3 rounded-full shadow ${
-          isRunning ? "bg-red-500 text-white hover:bg-red-600" : "bg-green-500 text-white hover:bg-green-600"
-        }`}
-      >
-        {isRunning ? "Pause" : "Start"}
-      </button>
     </div>
   );
 };

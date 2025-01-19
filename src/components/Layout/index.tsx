@@ -1,26 +1,18 @@
-import React, { PropsWithChildren } from "react";
+import React from "react";
 
-const Layout: React.FC<PropsWithChildren> = ({ children }) => {
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen bg-red-50 text-gray-800">
-      {/* Header */}
-      <header className="w-full py-4 bg-red-100 text-center text-lg font-semibold">
-        <div className="max-w-4xl mx-auto px-4 flex justify-between items-center">
-          <div className="text-xl font-bold">Pomodoro Timer</div>
-          <div className="flex space-x-4">
-            <button className="text-sm px-4 py-1 bg-gray-100 rounded hover:bg-gray-200">Report</button>
-            <button className="text-sm px-4 py-1 bg-gray-100 rounded hover:bg-gray-200">Settings</button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-violet-50">
+      <nav className="backdrop-blur-lg bg-white/30 border-b border-white/20">
+        <div className="container mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600">
+            Pomovate
+          </h1>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 w-full max-w-3xl px-4 py-8">{children}</main>
-
-      {/* Footer */}
-      <footer className="w-full py-4 bg-gray-100 text-center text-sm">
-        © 2024 Pomovate. All rights reserved.
-      </footer>
+      </nav>
+      <main>
+        {children}
+      </main>
     </div>
   );
 };
