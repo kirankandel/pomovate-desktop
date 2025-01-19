@@ -1,12 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTaskContext } from "@/context/TaskContext";
 import { useSettings } from "@/context/SettingsContext";
 
 const Timer: React.FC = () => {
   const { settings } = useSettings();
   const { activeTask, mode, setMode, setCurrentPomodoro, updateTaskProgress } = useTaskContext();
-  const [isRunning, setIsRunning] = React.useState(false);
-  const [cycles, setCycles] = React.useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [cycles, setCycles] = useState(0);
   
   const TIMER_DURATION = {
     pomodoro: settings.pomodoroTime * 60,
@@ -14,52 +14,66 @@ const Timer: React.FC = () => {
     longBreak: settings.longBreakTime * 60
   };
 
-  const [timeLeft, setTimeLeft] = React.useState(TIMER_DURATION[mode]);
+  const [timeLeft, setTimeLeft] = useState(TIMER_DURATION[mode]);
 
-  const handleCycleCompletion = () => {
-    if (mode === 'pomodoro' && activeTask) {
-      updateTaskProgress(activeTask.id);
-      const newCycles = cycles + 1;
-      setCycles(newCycles);
-      
-      // Determine next break type
-      if (newCycles % settings.longBreakInterval === 0) {
-        setMode('longBreak');
-      } else {
-        setMode('shortBreak');
-      }
-
-      // Handle auto-start for breaks
-      setIsRunning(settings.autoStartBreaks);
-    } else {
-      setMode('pomodoro');
-      // Handle auto-start for pomodoros
-      setIsRunning(settings.autoStartPomodoros);
-    }
-  };
-
-  React.useEffect(() => {
+  // Reset timer when mode changes
+  useEffect(() => {
     setTimeLeft(TIMER_DURATION[mode]);
     setCurrentPomodoro({
       elapsed: 0,
       total: TIMER_DURATION[mode]
     });
-    setIsRunning(false);
   }, [mode, settings]);
-  
-  React.useEffect(() => {
+
+  // Handle timer completion
+  const handleCycleCompletion = () => {
+    setIsRunning(false);
+    
+    if (mode === 'pomodoro' && activeTask) {
+      updateTaskProgress(activeTask.id);
+      const newCycles = cycles + 1;
+      setCycles(newCycles);
+      
+      // Switch to break mode
+      if (newCycles % settings.longBreakInterval === 0) {
+        setMode('longBreak');
+      } else {
+        setMode('shortBreak');
+      }
+      
+      // Auto-start break if enabled
+      setTimeout(() => {
+        setIsRunning(settings.autoStartBreaks);
+      }, 50);
+    } else {
+      setMode('pomodoro');
+      // Auto-start next pomodoro if enabled
+      setTimeout(() => {
+        setIsRunning(settings.autoStartPomodoros);
+      }, 50);
+    }
+  };
+
+  // Timer effect
+  useEffect(() => {
     let timer: NodeJS.Timeout;
     
     if (isRunning && timeLeft > 0) {
       timer = setInterval(() => {
-        setTimeLeft((prevTime) => prevTime - 1);
+        setTimeLeft((prevTime) => {
+          if (prevTime <= 1) {
+            clearInterval(timer);
+            handleCycleCompletion();
+            return 0;
+          }
+          return prevTime - 1;
+        });
+        
         setCurrentPomodoro({
-          elapsed: TIMER_DURATION[mode] - (timeLeft - 1),
+          elapsed: TIMER_DURATION[mode] - timeLeft + 1,
           total: TIMER_DURATION[mode]
         });
       }, 1000);
-    } else if (timeLeft === 0) {
-      handleCycleCompletion();
     }
 
     return () => {

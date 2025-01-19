@@ -2,8 +2,11 @@ import React, { createContext, useContext, useState } from 'react';
 import Task from '@/types/task';
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak';
-
+export interface CompletedTask extends Task {
+  completedAt: string;
+}
 interface TaskContextType {
+  completedTasks: CompletedTask[];
   tasks: Task[];
   activeTask: Task | null;
   projects: string[];
@@ -12,6 +15,8 @@ interface TaskContextType {
     elapsed: number;
     total: number;
   };
+  deleteTask: (id: string) => void;
+  completeTask: (id: string) => void;
   setMode: (mode: TimerMode) => void;
   addProject: (project: string) => void;
   setActiveTask: (task: Task | null) => void;
@@ -31,6 +36,23 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem('projects');
     return saved ? JSON.parse(saved) : [];
   });
+  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
+
+  const deleteTask = (id: string) => {
+    setTasks(tasks.filter(task => task.id !== id));
+  };
+
+  const completeTask = (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      const completedTask: CompletedTask = {
+        ...task,
+        completedAt: new Date().toISOString()
+      };
+      setCompletedTasks([...completedTasks, completedTask]);
+      setTasks(tasks.filter(t => t.id !== id));
+    }
+  };
   const addProject = (project: string) => {
     if (!projects.includes(project)) {
       const newProjects = [...projects, project];
@@ -58,6 +80,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <TaskContext.Provider value={{
       tasks,
+      completedTasks,
       activeTask,
       projects,
       addProject,
@@ -67,7 +90,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setActiveTask,
       addTask,
       updateTaskProgress,
-      setCurrentPomodoro
+      setCurrentPomodoro,
+      deleteTask,
+      completeTask,
     }}>
       {children}
     </TaskContext.Provider>
