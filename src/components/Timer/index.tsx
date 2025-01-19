@@ -1,17 +1,27 @@
 import React from "react";
 import { useTaskContext } from "@/context/TaskContext";
-
-const TIMER_DURATION = {
-  pomodoro: 2 * 60,
-  shortBreak: 5 * 60,
-  longBreak: 15 * 60
-};
+import { useSettings } from "@/context/SettingsContext";
 
 const Timer: React.FC = () => {
+  const { settings } = useSettings();
+  const TIMER_DURATION = {
+    pomodoro: settings.pomodoroTime * 60,
+    shortBreak: settings.shortBreakTime * 60,
+    longBreak: settings.longBreakTime * 60
+  };
   const { activeTask, mode, setCurrentPomodoro, updateTaskProgress } = useTaskContext();
   const [isRunning, setIsRunning] = React.useState(false);
   const [timeLeft, setTimeLeft] = React.useState(TIMER_DURATION[mode]);
 
+  React.useEffect(() => {
+    setTimeLeft(TIMER_DURATION[mode]);
+    setCurrentPomodoro({
+      elapsed: 0,
+      total: TIMER_DURATION[mode]
+    });
+    setIsRunning(false);
+  }, [mode, settings]);
+  
   React.useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isRunning && timeLeft > 0) {

@@ -3,6 +3,8 @@ import Layout from "@/components/Layout";
 import Timer from "@/components/Timer";
 import TaskList from "@/components/Tasks/TaskList";
 import { TaskProvider, useTaskContext } from "@/context/TaskContext";
+import { SettingsProvider } from '@/context/SettingsContext';
+
 
 const AppContent: React.FC = () => {
   const { mode, setMode } = useTaskContext();
@@ -13,17 +15,33 @@ const AppContent: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <section className="flex flex-col items-center space-y-8">
             <div className="backdrop-blur-lg bg-white/30 rounded-full p-1.5 flex space-x-1">
-              <button 
+              <button
                 onClick={() => setMode('pomodoro')}
-                className={`px-6 py-2 rounded-full transition-all duration-200 ${
-                  mode === 'pomodoro' 
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg' 
+                className={`px-6 py-2 rounded-full transition-all duration-200 ${mode === 'pomodoro'
+                    ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg'
                     : 'text-slate-600 hover:bg-white/50'
-                }`}
+                  }`}
               >
                 Pomodoro
               </button>
-              {/* ... other mode buttons ... */}
+              <button
+                onClick={() => setMode('shortBreak')}
+                className={`px-6 py-2 rounded-full transition-all duration-200 ${mode === 'shortBreak'
+                    ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg'
+                    : 'text-slate-600 hover:bg-white/50'
+                  }`}
+              >
+                Short Break
+              </button>
+              <button
+                onClick={() => setMode('longBreak')}
+                className={`px-6 py-2 rounded-full transition-all duration-200 ${mode === 'longBreak'
+                    ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg'
+                    : 'text-slate-600 hover:bg-white/50'
+                  }`}
+              >
+                Long Break
+              </button>
             </div>
             <Timer />
           </section>
@@ -38,9 +56,12 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <TaskProvider>
-      <AppContent />
-    </TaskProvider>
+    <SettingsProvider>
+      <TaskProvider>
+        <AppContent />
+      </TaskProvider>
+    </SettingsProvider>
+
   );
 };
 
