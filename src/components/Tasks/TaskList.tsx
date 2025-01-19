@@ -18,6 +18,7 @@ const AddTaskForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       estimatedPomodoros,
       priority,
       project,
+      createdAt: new Date().toISOString(),
     });
     onClose();
   };

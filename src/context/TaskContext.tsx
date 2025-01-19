@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import Task from '@/types/task';
+import crypto from 'crypto-random-string';
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak';
 export interface CompletedTask extends Task {
@@ -47,7 +48,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (task) {
       const completedTask: CompletedTask = {
         ...task,
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
+        createdAt: new Date(task.createdAt).toISOString()
       };
       setCompletedTasks([...completedTasks, completedTask]);
       setTasks(tasks.filter(t => t.id !== id));
@@ -63,7 +65,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addTask = (taskData: Omit<Task, 'id' | 'completedPomodoros'>) => {
     const newTask = {
       ...taskData,
-      id: crypto.randomUUID(),
+      id: crypto({ length: 10 }),
       completedPomodoros: 0
     };
     setTasks([...tasks, newTask]);
