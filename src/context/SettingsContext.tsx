@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-interface Settings {
+export interface Settings {
   pomodoroTime: number;
   shortBreakTime: number;
   longBreakTime: number;
@@ -82,12 +82,21 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [settings]);
 
   const updateSettings = (newSettings: Partial<Settings>) => {
-    const validatedSettings = validateSettings(newSettings);
-    setSettings(prev => ({ ...prev, ...validatedSettings }));
+    try {
+      const validatedSettings = validateSettings(newSettings);
+      setSettings(prev => ({ ...prev, ...validatedSettings }));
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+    }
   };
 
   const resetSettings = () => {
-    setSettings(defaultSettings);
+    try {
+      setSettings(defaultSettings);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultSettings));
+    } catch (error) {
+      console.error('Failed to reset settings:', error);
+    }
   };
 
   return (
@@ -108,3 +117,5 @@ export const useSettings = () => {
   }
   return context;
 };
+
+export default SettingsContext;

@@ -4,14 +4,39 @@ import { useSettings } from "@/context/SettingsContext";
 
 const Timer: React.FC = () => {
   const { settings } = useSettings();
+  const { activeTask, mode, setMode, setCurrentPomodoro, updateTaskProgress } = useTaskContext();
+  const [isRunning, setIsRunning] = React.useState(false);
+  const [cycles, setCycles] = React.useState(0);
+  
   const TIMER_DURATION = {
     pomodoro: settings.pomodoroTime * 60,
     shortBreak: settings.shortBreakTime * 60,
     longBreak: settings.longBreakTime * 60
   };
-  const { activeTask, mode, setCurrentPomodoro, updateTaskProgress } = useTaskContext();
-  const [isRunning, setIsRunning] = React.useState(false);
+
   const [timeLeft, setTimeLeft] = React.useState(TIMER_DURATION[mode]);
+
+  const handleCycleCompletion = () => {
+    if (mode === 'pomodoro' && activeTask) {
+      updateTaskProgress(activeTask.id);
+      const newCycles = cycles + 1;
+      setCycles(newCycles);
+      
+      // Determine next break type
+      if (newCycles % settings.longBreakInterval === 0) {
+        setMode('longBreak');
+      } else {
+        setMode('shortBreak');
+      }
+
+      // Handle auto-start for breaks
+      setIsRunning(settings.autoStartBreaks);
+    } else {
+      setMode('pomodoro');
+      // Handle auto-start for pomodoros
+      setIsRunning(settings.autoStartPomodoros);
+    }
+  };
 
   React.useEffect(() => {
     setTimeLeft(TIMER_DURATION[mode]);
@@ -24,6 +49,7 @@ const Timer: React.FC = () => {
   
   React.useEffect(() => {
     let timer: NodeJS.Timeout;
+    
     if (isRunning && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
@@ -32,11 +58,14 @@ const Timer: React.FC = () => {
           total: TIMER_DURATION[mode]
         });
       }, 1000);
-    } else if (timeLeft === 0 && activeTask) {
-      updateTaskProgress(activeTask.id);
+    } else if (timeLeft === 0) {
+      handleCycleCompletion();
     }
-    return () => clearInterval(timer);
-  }, [isRunning, timeLeft]);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRunning, timeLeft, mode]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
