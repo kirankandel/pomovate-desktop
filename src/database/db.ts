@@ -13,7 +13,7 @@ interface IDatabase {
     add(task: Omit<Task, 'id' | 'completedPomodoros'>): Promise<void>;
     update(task: Task): Promise<void>;
     delete(id: string): Promise<void>;
-    complete(id: string): Promise<void>;
+    complete(id: string, completedPomodoros?: number): Promise<void>;
   };
   projects: {
     getAll(): Promise<string[]>;
@@ -206,15 +206,22 @@ class TauriDatabase implements IDatabase {
       const db = await this.init();
       await db.execute('DELETE FROM tasks WHERE id = ?', [id]);
     },
-    complete: async (id: string): Promise<void> => {
+    complete: async (id: string, completedPomodoros?: number): Promise<void> => {
       const db = await this.init();
-      await db.execute(
-        `INSERT INTO completed_tasks 
-         SELECT *, datetime('now') as completed_at 
-         FROM tasks WHERE id = ?`,
-        [id]
-      );
-      await db.execute('DELETE FROM tasks WHERE id = ?', [id]);
+      const task = (await db.select<Task[]>('SELECT * FROM tasks WHERE id = ?', [id]))[0];
+      
+      if (task) {
+        const finalPomodoros = completedPomodoros ?? task.completedPomodoros;
+        await db.execute(
+          `INSERT INTO completed_tasks (
+            id, description, estimated_pomodoros, completed_pomodoros,
+            priority, project, created_at, completed_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+          [task.id, task.description, task.estimatedPomodoros, finalPomodoros,
+           task.priority, task.project, task.createdAt]
+        );
+        await db.execute('DELETE FROM tasks WHERE id = ?', [id]);
+      }
     }
   };
 

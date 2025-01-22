@@ -28,9 +28,11 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
   const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isActive) {
-      setActiveTask(null);
+      const partialProgress = currentPomodoro.elapsed / currentPomodoro.total;
+      completeTask(task.id, partialProgress);
+    } else {
+      completeTask(task.id, 0);
     }
-    completeTask(task.id);
   };
 
   const handleStartStop = (e: React.MouseEvent) => {

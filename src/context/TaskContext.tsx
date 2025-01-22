@@ -21,7 +21,7 @@ interface TaskContextType {
     total: number;
   };
   deleteTask: (id: string) => Promise<void>;
-  completeTask: (id: string) => Promise<void>;
+  completeTask: (id: string, partialProgress: number) => Promise<void>;
   setMode: (mode: TimerMode) => void;
   addProject: (project: string) => Promise<void>;
   setActiveTask: (task: Task | null) => void;
@@ -87,18 +87,24 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const completeTask = async (id: string) => {
+  const completeTask = async (id: string, partialProgress?: number) => {
     try {
       if (activeTask?.id === id) {
         setActiveTask(null);
       }
-      await dbTasks.complete(id);
-      const [updatedTasks, updatedCompletedTasks] = await Promise.all([
-        dbTasks.getAll(),
-        dbCompletedTasks.getAll()
-      ]);
-      setTasks(updatedTasks);
-      setCompletedTasks(updatedCompletedTasks);
+      
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        const finalCompletedPomodoros = task.completedPomodoros + (partialProgress || 0);
+        await dbTasks.complete(id, finalCompletedPomodoros);
+        
+        const [updatedTasks, updatedCompletedTasks] = await Promise.all([
+          dbTasks.getAll(),
+          dbCompletedTasks.getAll()
+        ]);
+        setTasks(updatedTasks);
+        setCompletedTasks(updatedCompletedTasks);
+      }
     } catch (error) {
       console.error('Failed to complete task:', error);
       throw error;
