@@ -1,7 +1,12 @@
-# Tauri + React + Typescript
+# Pomovate
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Pomovate is a Pomodoro timer that helps you stay focused and productive. It is a simple and easy-to-use app that helps you manage your time and tasks effectively. With Pomovate, you can set a timer for your work sessions and breaks, track your progress, and stay motivated to achieve your goals.
 
-## Recommended IDE Setup
+## Features
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- Set a timer for your work sessions and breaks
+- Track your progress and stay motivated
+- Customize your work and break intervals
+
+![alt text](pomovate.png)
+
