@@ -1,12 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Task from '@/types/task';
 import CompletedTask from '@/types/completedTask';
-import { 
-  getDatabase,
-  tasks as dbTasks,
-  projects as dbProjects,
-  completedTasks as dbCompletedTasks
-} from '@/database/db';
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak';
 
@@ -20,147 +14,121 @@ interface TaskContextType {
     elapsed: number;
     total: number;
   };
-  deleteTask: (id: string) => Promise<void>;
-  completeTask: (id: string, partialProgress: number) => Promise<void>;
+  deleteTask: (id: string) => void;
+  completeTask: (id: string, partialProgress: number) => void;
   setMode: (mode: TimerMode) => void;
-  addProject: (project: string) => Promise<void>;
+  addProject: (project: string) => void;
   setActiveTask: (task: Task | null) => void;
-  addTask: (task: Omit<Task, 'id' | 'completedPomodoros'>) => Promise<void>;
-  updateTaskProgress: (taskId: string) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'completedPomodoros'>) => void;
+  updateTaskProgress: (taskId: string) => void;
   setCurrentPomodoro: (pomodoro: { elapsed: number; total: number }) => void;
 }
+
+const STORAGE_KEY = 'task_context_data';
+
+const loadFromStorage = () => {
+  try {
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    return storedData ? JSON.parse(storedData) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveToStorage = (data: Partial<TaskContextType>) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error('Failed to save to local storage:', error);
+  }
+};
 
 export const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>([]);
-  const [projects, setProjects] = useState<string[]>([]);
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [mode, setMode] = useState<TimerMode>('pomodoro');
-  const [currentPomodoro, setCurrentPomodoro] = useState({ elapsed: 0, total: 0 });
-  const [isInitialized, setIsInitialized] = useState(false);
+  const storedData = loadFromStorage();
+  const [tasks, setTasks] = useState<Task[]>(storedData?.tasks || []);
+  const [completedTasks, setCompletedTasks] = useState<CompletedTask[]>(storedData?.completedTasks || []);
+  const [projects, setProjects] = useState<string[]>(storedData?.projects || []);
+  const [activeTask, setActiveTask] = useState<Task | null>(storedData?.activeTask || null);
+  const [mode, setMode] = useState<TimerMode>(storedData?.mode || 'pomodoro');
+  const [currentPomodoro, setCurrentPomodoro] = useState(storedData?.currentPomodoro || { elapsed: 0, total: 0 });
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        await getDatabase();
-        const [loadedTasks, loadedCompletedTasks, loadedProjects] = await Promise.all([
-          dbTasks.getAll(),
-          dbCompletedTasks.getAll(),
-          dbProjects.getAll()
-        ]);
-        setTasks(loadedTasks);
-        setCompletedTasks(loadedCompletedTasks);
-        setProjects(loadedProjects);
-        setIsInitialized(true);
-      } catch (error) {
-        console.error('Failed to initialize tasks:', error);
-        setIsInitialized(true);
-      }
-    };
-    init();
-  }, []);
-
-  const addTask = async (taskData: Omit<Task, 'id' | 'completedPomodoros'>) => {
-    try {
-      await dbTasks.add(taskData);
-      const updatedTasks = await dbTasks.getAll();
-      setTasks(updatedTasks);
-    } catch (error) {
-      console.error('Failed to add task:', error);
-      throw error;
-    }
-  };
-
-  const deleteTask = async (id: string) => {
-    try {
-      if (activeTask?.id === id) {
-        setActiveTask(null);
-      }
-      await dbTasks.delete(id);
-      const updatedTasks = await dbTasks.getAll();
-      setTasks(updatedTasks);
-    } catch (error) {
-      console.error('Failed to delete task:', error);
-      throw error;
-    }
-  };
-
-  const completeTask = async (id: string, partialProgress?: number) => {
-    try {
-      if (activeTask?.id === id) {
-        setActiveTask(null);
-      }
-      
-      const task = tasks.find(t => t.id === id);
-      if (task) {
-        const finalCompletedPomodoros = task.completedPomodoros + (partialProgress || 0);
-        await dbTasks.complete(id, finalCompletedPomodoros);
-        
-        const [updatedTasks, updatedCompletedTasks] = await Promise.all([
-          dbTasks.getAll(),
-          dbCompletedTasks.getAll()
-        ]);
-        setTasks(updatedTasks);
-        setCompletedTasks(updatedCompletedTasks);
-      }
-    } catch (error) {
-      console.error('Failed to complete task:', error);
-      throw error;
-    }
-  };
-
-  const updateTaskProgress = async (taskId: string) => {
-    try {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        const updatedTask = {
-          ...task,
-          completedPomodoros: task.completedPomodoros + 1
-        };
-        await dbTasks.update(updatedTask);
-        const updatedTasks = await dbTasks.getAll();
-        setTasks(updatedTasks);
-      }
-    } catch (error) {
-      console.error('Failed to update task progress:', error);
-      throw error;
-    }
-  };
-
-  const addProject = async (project: string) => {
-    try {
-      await dbProjects.add(project);
-      const updatedProjects = await dbProjects.getAll();
-      setProjects(updatedProjects);
-    } catch (error) {
-      console.error('Failed to add project:', error);
-      throw error;
-    }
-  };
-
-  if (!isInitialized) {
-    return null;
-  }
-
-  return (
-    <TaskContext.Provider value={{
+    const dataToSave = {
       tasks,
       completedTasks,
-      activeTask,
       projects,
+      activeTask,
       mode,
       currentPomodoro,
-      deleteTask,
-      completeTask,
-      setMode,
-      addProject,
-      setActiveTask,
-      addTask,
-      updateTaskProgress,
-      setCurrentPomodoro,
-    }}>
+    };
+    saveToStorage(dataToSave);
+  }, [tasks, completedTasks, projects, activeTask, mode, currentPomodoro]);
+
+  const addTask = (taskData: Omit<Task, 'id' | 'completedPomodoros'>) => {
+    const newTask: Task = {
+      id: String(Date.now()), // Generate a unique ID
+      ...taskData,
+      completedPomodoros: 0,
+    };
+    setTasks((prevTasks) => [...prevTasks, newTask]);
+  };
+
+  const deleteTask = (id: string) => {
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+    if (activeTask?.id === id) {
+      setActiveTask(null);
+    }
+  };
+
+  const completeTask = (id: string, partialProgress: number = 0) => {
+    const task = tasks.find((t) => t.id === id);
+    if (task) {
+      setTasks((prevTasks) => prevTasks.filter((t) => t.id !== id));
+      setCompletedTasks((prevCompleted) => [
+        ...prevCompleted,
+        { ...task, completedPomodoros: task.completedPomodoros + partialProgress, completedAt: new Date().toISOString() },
+      ]);
+      if (activeTask?.id === id) {
+        setActiveTask(null);
+      }
+    }
+  };
+
+  const updateTaskProgress = (taskId: string) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? { ...task, completedPomodoros: task.completedPomodoros + 1 }
+          : task
+      )
+    );
+  };
+
+  const addProject = (project: string) => {
+    setProjects((prevProjects) => [...prevProjects, project]);
+  };
+
+  return (
+    <TaskContext.Provider
+      value={{
+        tasks,
+        completedTasks,
+        activeTask,
+        projects,
+        mode,
+        currentPomodoro,
+        deleteTask,
+        completeTask,
+        setMode,
+        addProject,
+        setActiveTask,
+        addTask,
+        updateTaskProgress,
+        setCurrentPomodoro,
+      }}
+    >
       {children}
     </TaskContext.Provider>
   );

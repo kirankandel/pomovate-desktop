@@ -44,11 +44,13 @@ const AddTaskForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             value={estimatedPomodoros}
             onChange={(e) => setEstimatedPomodoros(Number(e.target.value))}
             className="w-full p-2 rounded-lg border border-slate-200"
+            title="Estimated Pomodoros"
           />
         </div>
         <div>
-          <label className="block text-sm text-slate-600 mb-1">Priority</label>
+          <label htmlFor="priority" className="block text-sm text-slate-600 mb-1">Priority</label>
           <select
+            id="priority"
             value={priority}
             onChange={(e) => setPriority(e.target.value as 'high' | 'medium' | 'low')}
             className="w-full p-2 rounded-lg border border-slate-200"

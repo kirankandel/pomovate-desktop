@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useTaskContext, CompletedTask } from '@/context/TaskContext';
+import { useTaskContext } from '@/context/TaskContext';
 import { format } from 'date-fns';
+import CompletedTask from '@/types/completedTask';
 
 type FilterPeriod = 'all' | 'today' | 'week' | 'month';
 

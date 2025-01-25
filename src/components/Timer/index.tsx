@@ -71,7 +71,6 @@ const Timer: React.FC = () => {
     setIsRunning(false);
     
     if (mode === 'pomodoro' && activeTask) {
-      const progress = elapsedTime / TIMER_DURATION[mode];
       await updateTaskProgress(activeTask.id);
     }
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "pomovate",
+  "productName": "pomo",
   "version": "0.1.0",
-  "identifier": "com.pomovate.app",
+  "identifier": "com.pomo.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "pomovate",
+        "title": "Pomovate",
         "width": 800,
         "height": 600
       }
@@ -21,13 +21,6 @@
       "csp": null
     }
   },
-    "tauri": {
-    "allowlist": {
-      "fs": {
-        "all": true,
-        "scope": ["$APPDATA/*", "$APPDATA/database.db"]
-      }
-    },
   "bundle": {
     "active": true,
     "targets": "all",
